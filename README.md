@@ -1,58 +1,112 @@
+#  Ghost CMS DevSecOps Deployment
 
-# Welcome to your CDK Python project!
+This project automates the secure deployment of [Ghost CMS](https://ghost.org/) using AWS CDK, Docker, and a DevSecOps pipeline that includes Semgrep static code analysis and Slack notifications.
 
-This is a blank project for CDK development with Python.
+---
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+## Infrastructure Overview
 
-This project is set up like a standard Python project.  The initialization
-process also creates a virtualenv within this project, stored under the `.venv`
-directory.  To create the virtualenv it assumes that there is a `python3`
-(or `python` for Windows) executable in your path with access to the `venv`
-package. If for any reason the automatic creation of the virtualenv fails,
-you can create the virtualenv manually.
+| Component          | Description                    |
+| ------------------ | ------------------------------ |
+| **EC2**            | Runs Ghost CMS in Docker       |
+| **RDS (MySQL)**    | (Optional) External DB support |
+| **CDK (Python)**   | Infrastructure as Code         |
+| **GitHub Actions** | CI pipeline with Semgrep scan  |
+| **Slack**          | Receives scan alerts           |
 
-To manually create a virtualenv on MacOS and Linux:
+---
 
-```
-$ python3 -m venv .venv
-```
+##  Architecture Diagram
 
-After the init process completes and the virtualenv is created, you can use the following
-step to activate your virtualenv.
-
-```
-$ source .venv/bin/activate
-```
-
-If you are a Windows platform, you would activate the virtualenv like this:
-
-```
-% .venv\Scripts\activate.bat
+```mermaid
+graph TD
+  A[GitHub Repo] -->|Push / PR| B[GitHub Actions]
+  B -->|Semgrep Scan| C[Slack Channel]
+  B --> D[CDK Deploy]
+  D --> E[AWS Cloud]
+  E -->|launch| F[EC2: Ghost + Docker]
+  E -->|create| G[RDS: MySQL]
+  F -->|connects to| G
 ```
 
-Once the virtualenv is activated, you can install the required dependencies.
+---
 
-```
-$ pip install -r requirements.txt
-```
+##  How to Deploy
 
-At this point you can now synthesize the CloudFormation template for this code.
-
-```
-$ cdk synth
+```bash
+cdk bootstrap
+cdk deploy
 ```
 
-To add additional dependencies, for example other CDK libraries, just add
-them to your `setup.py` file and rerun the `pip install -r requirements.txt`
-command.
+After deployment:
 
-## Useful commands
+* Ghost CMS: `http://<EC2_PUBLIC_IP>:2368`
+* Admin Setup: `http://<EC2_PUBLIC_IP>:2368/ghost`
 
- * `cdk ls`          list all stacks in the app
- * `cdk synth`       emits the synthesized CloudFormation template
- * `cdk deploy`      deploy this stack to your default AWS account/region
- * `cdk diff`        compare deployed stack with current state
- * `cdk docs`        open CDK documentation
+---
 
-Enjoy!
+##  Security Features
+
+*  Limited security group access (SSH and app ports only)
+*  Semgrep scan on PR/push to `main`
+*  Slack integration for fast alerting
+*  SSH with key pair (no password auth)
+*  CDK-managed infrastructure teardown (`cdk destroy`)
+
+---
+
+##  CI/CD – Semgrep + Slack
+
+* **Workflow**: `.github/workflows/semgrep-slack.yml`
+* **Trigger**: Every push / PR to `main`
+* **Slack Webhook**: Configured via GitHub secrets
+
+---
+
+##  Project Structure
+
+```bash
+ghost-cdk/
+├── ghost_cdk/
+│   ├── ghost_cdk_stack.py       # CDK Stack: EC2, RDS
+│
+├── app.py                       # CDK App entry
+├── .github/workflows/           # GitHub Actions
+│   └── semgrep-slack.yml
+├── README.md
+└── requirements.txt
+```
+
+---
+
+##  Testing
+
+*  Access Ghost CMS in browser
+*  Add a test Semgrep rule (e.g., `eval("bad")`) and push
+*  Slack receives alert
+*  Check GitHub Actions log
+
+---
+
+##  Cleanup
+
+To avoid AWS charges:
+
+```bash
+cdk destroy
+```
+
+---
+
+##  Notes
+
+* Node 18 is deprecated — use Node 20+ for long-term support
+* Amazon Linux 2 support ends in 2026 — consider Amazon Linux 2023
+* For production: use Docker volumes and secure DB credentials (Secrets Manager)
+
+---
+
+##  Contact
+
+**Author**: Hussein Souheill
+**GitHub**: [github.com/HSouheill](https://github.com/HSouheill)
