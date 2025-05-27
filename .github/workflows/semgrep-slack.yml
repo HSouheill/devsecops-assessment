@@ -1,0 +1,39 @@
+name: Semgrep Code Scan with Slack Notification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Semgrep
+        run: pip install semgrep
+
+      - name: Run Semgrep scan
+        run: semgrep scan --config=auto . --json > semgrep-results.json
+
+      - name: Post Semgrep results to Slack (if issues found)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if grep -q '"severity":' semgrep-results.json; then
+            msg=$(jq -r '.results[] | "- \(.check_id) in \(.path):\(.start.line)"' semgrep-results.json)
+            payload=$(jq -n --arg msg "$msg" '{"text":"⚠️ Semgrep found issues:\n" + $msg}')
+            curl -X POST -H 'Content-type: application/json' \
+              --data "$payload" $SLACK_WEBHOOK_URL
+          else
+            echo "✅ No issues found by Semgrep."
+          fi
