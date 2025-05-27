@@ -85,6 +85,7 @@ ghost-cdk/
 *  Add a test Semgrep rule (e.g., `eval("bad")`) and push
 *  Slack receives alert
 *  Check GitHub Actions log
+*  check : http://16.16.25.243:2368/
 
 ---
 
