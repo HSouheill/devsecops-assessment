@@ -9,7 +9,7 @@ This project automates the secure deployment of [Ghost CMS](https://ghost.org/) 
 | Component          | Description                    |
 | ------------------ | ------------------------------ |
 | **EC2**            | Runs Ghost CMS in Docker       |
-| **RDS (MySQL)**    | (Optional) External DB support |
+| **RDS (MySQL)**    | External DB support |
 | **CDK (Python)**   | Infrastructure as Code         |
 | **GitHub Actions** | CI pipeline with Semgrep scan  |
 | **Slack**          | Receives scan alerts           |
